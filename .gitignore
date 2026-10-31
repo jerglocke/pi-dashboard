@@ -1,0 +1,24 @@
+# ---------------------------------------------------------------- secrets --
+# .env holds the iCloud app-specific password. It must never be committed.
+.env
+.env.*
+!.env.example
+
+# Machine-specific settings: your walk time, your HOST, your swapped feeds.
+# Shipped as local_settings.example.py instead.
+local_settings.py
+
+# ------------------------------------------------------------ environment --
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# ------------------------------------------------------------------ build --
+*.tar.gz
+
+# ------------------------------------------------------------------- junk --
+.DS_Store
+*.swp
+*~

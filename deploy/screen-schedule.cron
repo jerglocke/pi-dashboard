@@ -1,0 +1,4 @@
+# Blank the panel overnight so it is not glowing at 3am.
+# Install with: crontab -e     (X11 sessions; see README for Wayland)
+0 23 * * * DISPLAY=:0 xset dpms force off
+30 6 * * * DISPLAY=:0 xset dpms force on

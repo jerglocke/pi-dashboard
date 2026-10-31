@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sterling St</title>
+<style>
+/* ------------------------------------------------------------------ tokens
+   The visual language here is borrowed from the platform itself: black
+   ground, Helvetica, MTA route bullets in their real spec colours, and the
+   amber of the countdown clocks hanging over the Nostrand Ave platforms. */
+:root {
+  --ground:   #08090B;
+  --panel:    #14171D;
+  --hairline: #232833;
+  --ink:      #F2F3F5;
+  --dim:      #767D89;
+  --amber:    #FFB000;
+
+  --gap: clamp(0.6rem, 1.4vw, 1.4rem);
+
+  font-family: "Helvetica Neue", Helvetica, "Liberation Sans", Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--ground);
+  color: var(--ink);
+  overflow: hidden;
+  cursor: none;                 /* it is a wall panel, not a computer */
+  -webkit-font-smoothing: antialiased;
+}
+
+#board {
+  height: 100%;
+  padding: var(--gap);
+  display: grid;
+  gap: var(--gap);
+  grid-template-columns: 1.3fr 0.95fr 1.15fr;
+  grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+  grid-template-areas:
+    "head   head   head"
+    "trains sky    news"
+    "agenda agenda news"
+    "otd    otd    otd"
+    "foot   foot   foot";
+}
+
+.card {
+  background: var(--panel);
+  border-radius: 10px;
+  padding: clamp(0.7rem, 1.5vw, 1.4rem);
+  min-width: 0;
+}
+
+/* -------------------------------------------------------------- headline */
+#head {
+  grid-area: head;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 0.3rem;
+}
+.clock {
+  font-size: clamp(2.6rem, 6.5vw, 5rem);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 0.95;
+}
+.clock small { font-size: 0.32em; font-weight: 400; color: var(--dim); margin-left: 0.25em; }
+.headmeta { text-align: right; color: var(--dim); font-size: clamp(0.8rem, 1.5vw, 1.15rem); line-height: 1.5; }
+.headmeta b { color: var(--ink); font-weight: 400; }
+
+/* ------------------------------------------------------- departure board */
+#trains { grid-area: trains; display: flex; flex-direction: column; }
+
+.station {
+  display: flex; align-items: baseline; justify-content: space-between;
+  border-bottom: 1px solid var(--hairline);
+  padding-bottom: 0.45rem; margin-bottom: 0.5rem;
+}
+.station h1 { font-size: clamp(1.1rem, 2.2vw, 1.7rem); font-weight: 700; letter-spacing: -0.01em; }
+.station span { color: var(--dim); font-size: clamp(0.7rem, 1.2vw, 0.95rem); }
+
+.direction + .direction { margin-top: 0.7rem; }
+.direction > h2 {
+  color: var(--dim);
+  font-size: clamp(0.72rem, 1.25vw, 1rem);
+  font-weight: 400;
+  margin-bottom: 0.15rem;
+}
+
+.train {
+  display: flex; align-items: center; gap: 0.7rem;
+  padding: 0.2rem 0 0.2rem 0.55rem;
+  border-left: 3px solid transparent;
+}
+/* The one you would actually walk out the door for. */
+.train.next { border-left-color: var(--amber); }
+.train.next .mins { color: var(--amber); }
+/* Too soon to make on foot -- shown, but visibly out of reach. */
+.train.gone { opacity: 0.3; }
+
+.bullet {
+  flex: 0 0 auto;
+  width: clamp(1.7rem, 3.4vw, 2.6rem);
+  height: clamp(1.7rem, 3.4vw, 2.6rem);
+  border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: clamp(0.95rem, 2vw, 1.5rem);
+  font-weight: 700;
+  color: #fff;
+}
+.bullet.dark { color: #000; }
+
+.mins {
+  font-size: clamp(1.5rem, 3.4vw, 2.7rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  min-width: 2.2ch; text-align: right;
+}
+.mins u { font-size: 0.38em; font-weight: 400; color: var(--dim);
+          text-decoration: none; margin-left: 0.25em; }
+.now { font-size: clamp(1.1rem, 2.2vw, 1.7rem); font-weight: 700; letter-spacing: -0.02em; }
+
+/* ------------------------------------------------------------- the sky */
+#sky { grid-area: sky; display: flex; flex-direction: column; gap: 0.5rem; }
+.temp { font-size: clamp(2.6rem, 6vw, 4.6rem); font-weight: 700; letter-spacing: -0.045em; line-height: 1; }
+.cond { font-size: clamp(0.85rem, 1.6vw, 1.25rem); }
+.feels { color: var(--dim); font-size: clamp(0.72rem, 1.3vw, 1rem); }
+
+.hours { display: flex; gap: 0.35rem; margin-top: auto; padding-top: 0.5rem; }
+.hours div { flex: 1; text-align: center; font-size: clamp(0.6rem, 1.1vw, 0.85rem); color: var(--dim); }
+.hours b { display: block; color: var(--ink); font-weight: 400; font-size: 1.25em; }
+
+.days { border-top: 1px solid var(--hairline); padding-top: 0.5rem; margin-top: 0.5rem; }
+.day { display: flex; align-items: baseline; gap: 0.5rem; font-size: clamp(0.72rem, 1.35vw, 1.05rem); padding: 0.1rem 0; }
+.day .nm { width: 3ch; color: var(--dim); }
+.day .hi { font-weight: 700; margin-left: auto; }
+.day .lo { color: var(--dim); width: 3ch; text-align: right; }
+
+.wxalert {
+  background: var(--amber); color: #000;
+  border-radius: 5px; padding: 0.2rem 0.5rem; font-weight: 700;
+  font-size: clamp(0.7rem, 1.3vw, 1rem);
+}
+
+/* ------------------------------------------------------------- agenda */
+#agenda { grid-area: agenda; }
+.events { display: flex; gap: clamp(0.6rem, 1.6vw, 1.6rem); overflow: hidden; }
+.event { min-width: 0; flex: 1; border-left: 2px solid var(--hairline); padding-left: 0.55rem; }
+.event.today { border-left-color: var(--amber); }
+.event .when { color: var(--dim); font-size: clamp(0.65rem, 1.15vw, 0.9rem); }
+.event .when b { color: var(--ink); font-weight: 700; }
+.event .what {
+  font-size: clamp(0.8rem, 1.5vw, 1.2rem);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ----------------------------------------------------------------- news */
+#news { grid-area: news; display: flex; flex-direction: column; min-height: 0; }
+.feed + .feed { margin-top: 0.7rem; padding-top: 0.6rem; border-top: 1px solid var(--hairline); }
+.feed > h2 {
+  color: var(--dim);
+  font-size: clamp(0.72rem, 1.25vw, 1rem);
+  font-weight: 400;
+  margin-bottom: 0.3rem;
+}
+.story { margin-bottom: 0.5rem; }
+.story .head {
+  font-size: clamp(0.74rem, 1.35vw, 1.05rem);
+  line-height: 1.28;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.story .attr { color: var(--dim); font-size: clamp(0.6rem, 1.05vw, 0.8rem); margin-top: 0.1rem; }
+
+/* ---------------------------------------------------------- on this day */
+#otd {
+  grid-area: otd;
+  display: flex; align-items: baseline; gap: 0.75rem;
+  padding: 0.55rem 0.3rem 0;
+  border-top: 1px solid var(--hairline);
+  min-height: 0;
+}
+#otd .yr {
+  flex: 0 0 auto;
+  font-size: clamp(1.1rem, 2.2vw, 1.7rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+#otd .yr em { font-style: normal; font-size: 0.55em; color: var(--dim); margin-left: 0.15em; }
+#otd .fact {
+  color: var(--dim);
+  font-size: clamp(0.72rem, 1.3vw, 1rem);
+  line-height: 1.35;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+#otd .here { color: var(--amber); }
+
+/* --------------------------------------------------------------- footer */
+#foot {
+  grid-area: foot;
+  display: flex; align-items: center; gap: clamp(0.8rem, 2vw, 2rem);
+  padding: 0 0.3rem;
+  color: var(--dim);
+  font-size: clamp(0.65rem, 1.2vw, 0.95rem);
+}
+#foot b { color: var(--ink); font-weight: 700; }
+.dot { width: 0.55em; height: 0.55em; border-radius: 50%; display: inline-block; }
+.spacer { margin-left: auto; }
+
+.empty { color: var(--dim); font-size: clamp(0.75rem, 1.4vw, 1.05rem); }
+.offline { color: var(--amber); }
+
+@media (prefers-reduced-motion: no-preference) {
+  #board { transition: opacity 120ms linear; }
+}
+</style>
+</head>
+<body>
+  <div id="board">{% include "panel.html" %}</div>
+
+<script>
+// The only client-side logic in the project: fetch a freshly rendered board
+// and swap it in. Every formatting decision stays in Python.
+async function refresh() {
+  try {
+    const html = await (await fetch("/panel", {cache: "no-store"})).text();
+    document.getElementById("board").innerHTML = html;
+  } catch (e) { /* keep showing the last good board */ }
+}
+setInterval(refresh, 15000);
+</script>
+</body>
+</html>

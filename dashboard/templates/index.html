@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sterling St</title>
+<style>
+/* ------------------------------------------------------------------ tokens
+   The visual language here is borrowed from the platform itself: black
+   ground, Helvetica, MTA route bullets in their real spec colours, and the
+   amber of the countdown clocks over the Nostrand Ave platforms.
+
+   Sizing is driven by viewport HEIGHT, not width, so the board fills the
+   panel on any aspect ratio. The divisor allows for the agenda row, which
+   appears only when the calendar has events -- size for the empty case and
+   the columns overflow the moment an event shows up. The vw term is only a
+   guard so a very narrow window does not overflow sideways.
+
+   Raise --scale to grow everything together. To make the numerals bigger
+   still, cut rows -- SUBWAY_COUNT and NEWS_SHOWN in config.py -- rather than
+   editing sizes here one at a time, which just breaks the proportions. */
+:root {
+  --ground:   #08090B;
+  --panel:    #14171D;
+  --hairline: #232833;
+  --ink:      #F2F3F5;
+  --dim:      #7C838F;
+  --amber:    #FFB000;
+
+  --scale: 1;
+  font-size: calc(min(1.9vh, 1.6vw) * var(--scale));
+
+  --gap: 1rem;
+
+  font-family: "Helvetica Neue", Helvetica, "Liberation Sans", Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--ground);
+  color: var(--ink);
+  overflow: hidden;
+  cursor: none;                 /* it is a wall panel, not a computer */
+  -webkit-font-smoothing: antialiased;
+}
+
+#board {
+  height: 100%;
+  padding: var(--gap);
+  display: grid;
+  gap: var(--gap);
+  grid-template-columns: 1.3fr 0.95fr 1.15fr;
+  grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+  grid-template-areas:
+    "head   head   head"
+    "trains sky    news"
+    "agenda agenda news"
+    "otd    otd    otd"
+    "foot   foot   foot";
+}
+
+.card {
+  background: var(--panel);
+  border-radius: 10px;
+  padding: 0.9rem 1.1rem;
+  min-width: 0;
+  overflow: hidden;             /* clip rather than break the grid */
+}
+
+/* -------------------------------------------------------------- headline */
+#head {
+  grid-area: head;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 0.3rem;
+}
+.clock {
+  font-size: 4.2rem;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 0.92;
+}
+.clock small { font-size: 0.3em; font-weight: 400; color: var(--dim); margin-left: 0.25em; }
+.headmeta { text-align: right; color: var(--dim); font-size: 1.3rem; line-height: 1.45; }
+.headmeta b { color: var(--ink); font-weight: 400; }
+
+/* -------------------------------------------------------- departure board
+   The hero, and the reason for most of the sizing decisions above. Natural
+   top-aligned flow on purpose: stretching the rows to fill the column just
+   spreads the gaps, so the height goes into the numerals instead. */
+/* Two directions side by side. The station name takes the full width, then
+   the columns split what is left -- which halves the number of rows the card
+   has to be tall enough for, so each direction can list more trains. */
+#trains {
+  grid-area: trains;
+  display: flex; flex-wrap: wrap;
+  align-content: flex-start;
+  column-gap: 1.3rem;
+}
+
+.station {
+  flex: 0 0 100%;
+  display: flex; align-items: baseline; justify-content: space-between;
+  border-bottom: 1px solid var(--hairline);
+  padding-bottom: 0.35rem; margin-bottom: 0.45rem;
+}
+.station h1 { font-size: 2.5rem; font-weight: 700; letter-spacing: -0.015em; line-height: 1; }
+.station span { color: var(--dim); font-size: 1.25rem; }
+
+.direction { flex: 1 1 0; min-width: 0; }
+.direction > h2 {
+  color: var(--dim);
+  font-size: 1.6rem;
+  font-weight: 400;
+  line-height: 1.15;
+  margin-bottom: 0.15rem;
+}
+
+.train {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.12rem 0 0.12rem 0.5rem;
+  border-left: 4px solid transparent;
+}
+/* The one you would actually walk out the door for. */
+.train.next { border-left-color: var(--amber); }
+.train.next .mins { color: var(--amber); }
+/* Too soon to make on foot -- shown, but visibly out of reach. */
+.train.gone { opacity: 0.3; }
+
+.bullet {
+  flex: 0 0 auto;
+  width: 3.1rem; height: 3.1rem;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: 1.95rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+}
+.bullet.dark { color: #000; }
+
+.mins {
+  font-size: 3.4rem;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+  min-width: 2.2ch; text-align: right;
+}
+.mins u { font-size: 0.32em; font-weight: 400; color: var(--dim);
+          text-decoration: none; margin-left: 0.22em; }
+.now { font-size: 2.4rem; font-weight: 700; letter-spacing: -0.02em; }
+
+/* --------------------------------------------------------------- the sky */
+#sky { grid-area: sky; display: flex; flex-direction: column;
+       justify-content: space-between; gap: 0.4rem; }
+.wxalert {
+  flex: 0 0 auto;
+  background: var(--amber); color: #000;
+  border-radius: 5px; padding: 0.15rem 0.5rem; font-weight: 700;
+  font-size: 1.45rem; line-height: 1.25;
+}
+.temp { font-size: 5.6rem; font-weight: 700; letter-spacing: -0.05em; line-height: 0.98; }
+.cond { font-size: 1.9rem; line-height: 1.2; }
+.feels { color: var(--dim); font-size: 1.35rem; line-height: 1.3; }
+
+.hours { display: flex; gap: 0.35rem; padding-top: 0.5rem; }
+.hours div { flex: 1; text-align: center; font-size: 1.15rem; color: var(--dim); line-height: 1.3; }
+.hours b { display: block; color: var(--ink); font-weight: 400; font-size: 1.3em; }
+
+.days { border-top: 1px solid var(--hairline); padding-top: 0.4rem; margin-top: 0.4rem; }
+.day { display: flex; align-items: baseline; gap: 0.5rem; font-size: 1.75rem; line-height: 1.32; }
+.day .nm { width: 3ch; color: var(--dim); }
+.day .hi { font-weight: 700; margin-left: auto; }
+.day .lo { color: var(--dim); width: 3ch; text-align: right; }
+
+/* ----------------------------------------------------------------- news */
+#news { grid-area: news; display: flex; flex-direction: column;
+        justify-content: space-between; min-height: 0; }
+.feed + .feed { margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px solid var(--hairline); }
+.feed > h2 {
+  color: var(--dim);
+  font-size: 1.55rem;
+  font-weight: 400;
+  line-height: 1.15;
+  margin-bottom: 0.3rem;
+}
+.story { margin-bottom: 0.55rem; }
+/* No line clamp anywhere in here on purpose: a clamp is what produces the
+   trailing ellipsis. Headlines wrap freely and the size below is chosen so a
+   long one still lands inside the column. */
+.story .head {
+  font-size: 1.45rem;
+  line-height: 1.26;
+}
+.story .attr { color: var(--dim); font-size: 1.05rem; line-height: 1.3; margin-top: 0.1rem; }
+
+/* --------------------------------------------------------------- agenda */
+#agenda { grid-area: agenda; }
+.events { display: flex; gap: 1.4rem; overflow: hidden; }
+.event { min-width: 0; flex: 1; border-left: 3px solid var(--hairline); padding-left: 0.6rem; }
+.event.today { border-left-color: var(--amber); }
+.event .when { color: var(--dim); font-size: 1.2rem; line-height: 1.3; }
+.event .when b { color: var(--ink); font-weight: 700; }
+.event .what {
+  font-size: 1.75rem; line-height: 1.25;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ---------------------------------------------------------- on this day */
+#otd {
+  grid-area: otd;
+  display: flex; align-items: baseline; gap: 0.9rem;
+  padding: 0.55rem 0.3rem 0;
+  border-top: 1px solid var(--hairline);
+  min-height: 0;
+}
+#otd .yr {
+  flex: 0 0 auto;
+  font-size: 2.6rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+#otd .yr em { font-style: normal; font-size: 0.5em; color: var(--dim); margin-left: 0.15em; }
+#otd .fact {
+  color: var(--dim);
+  font-size: 1.65rem;
+  line-height: 1.3;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+#otd .here { color: var(--amber); }
+
+/* --------------------------------------------------------------- footer */
+#foot {
+  grid-area: foot;
+  display: flex; align-items: center; gap: 1.6rem;
+  padding: 0.2rem 0.3rem 0;
+  color: var(--dim);
+  font-size: 1.45rem;
+  line-height: 1.3;
+}
+#foot b { color: var(--ink); font-weight: 700; }
+.dot { width: 0.55em; height: 0.55em; border-radius: 50%; display: inline-block; }
+.spacer { margin-left: auto; }
+
+.empty { color: var(--dim); font-size: 1.4rem; }
+.offline { color: var(--amber); }
+
+@media (prefers-reduced-motion: no-preference) {
+  #board { transition: opacity 120ms linear; }
+}
+</style>
+</head>
+<body>
+  <div id="board">{% include "panel.html" %}</div>
+
+<script>
+// The only client-side logic in the project: fetch a freshly rendered board
+// and swap it in. Every formatting decision stays in Python.
+async function refresh() {
+  try {
+    const html = await (await fetch("/panel", {cache: "no-store"})).text();
+    document.getElementById("board").innerHTML = html;
+  } catch (e) { /* keep showing the last good board */ }
+}
+setInterval(refresh, 15000);
+</script>
+</body>
+</html>

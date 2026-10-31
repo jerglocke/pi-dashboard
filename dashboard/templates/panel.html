@@ -1,0 +1,158 @@
+{# Re-rendered every 15 seconds and swapped into #board. #}
+
+<div id="head">
+  <div class="clock">{{ clock }}<small>{{ meridiem }}</small></div>
+  <div class="headmeta">
+    <b>{{ date }}</b>
+    {% if weather %}<br>sunrise {{ weather.sunrise }} &nbsp; sunset {{ weather.sunset }}{% endif %}
+  </div>
+</div>
+
+{# ------------------------------------------------------------ departures #}
+<div id="trains" class="card">
+  <div class="station">
+    <h1>{{ subway.station if subway else "Sterling St" }}</h1>
+    <span>{{ subway.walk_minutes if subway else "" }} min walk</span>
+  </div>
+
+  {% if not subway %}
+    <p class="empty">Waiting for the first feed pull&hellip;</p>
+  {% elif subway_stale %}
+    <p class="empty offline">Feed stale &mdash; times below may be wrong</p>
+  {% endif %}
+
+  {% if subway %}
+    {% for dir in subway.directions %}
+      <div class="direction">
+        <h2>{{ dir.label }}</h2>
+        {% if not dir.trains %}
+          <p class="empty">Nothing scheduled right now</p>
+        {% endif %}
+        {% set ns = namespace(flagged=false) %}
+        {% for t in dir.trains %}
+          {% set is_next = t.catchable and not ns.flagged %}
+          {% if is_next %}{% set ns.flagged = true %}{% endif %}
+          <div class="train{{ ' next' if is_next }}{{ ' gone' if not t.catchable }}">
+            <span class="bullet {{ 'dark' if t.dark_text }}" style="background:{{ t.color }}">{{ t.route }}</span>
+            {% if t.minutes < 1 %}
+              <span class="now">now</span>
+            {% else %}
+              <span class="mins">{{ t.minutes }}<u>min</u></span>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    {% endfor %}
+  {% endif %}
+</div>
+
+{# --------------------------------------------------------------- weather #}
+<div id="sky" class="card">
+  {% if weather %}
+    {% for a in weather.alerts %}
+      <div class="wxalert">{{ a.headline }}</div>
+    {% endfor %}
+
+    <div class="current">
+      <div class="temp">{{ weather.temp }}&deg;</div>
+      <div class="cond">{{ weather.glyph }} {{ weather.label }}</div>
+      <div class="feels">
+        feels {{ weather.feels_like }}&deg; &middot; wind {{ weather.wind }} mph
+      </div>
+    </div>
+
+    <div class="hours">
+      {% for h in weather.hours[:6] %}
+        <div>
+          {{ h.hour }}
+          <b>{{ h.temp }}&deg;</b>
+          {% if h.precip and h.precip >= 20 %}{{ h.precip }}%{% endif %}
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="days">
+      {% for d in weather.days %}
+        <div class="day">
+          <span class="nm">{{ d.name }}</span>
+          <span>{{ d.glyph }}</span>
+          {% if d.precip and d.precip >= 30 %}<span class="feels">{{ d.precip }}%</span>{% endif %}
+          <span class="hi">{{ d.high }}&deg;</span>
+          <span class="lo">{{ d.low }}&deg;</span>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="empty">Weather unavailable</p>
+  {% endif %}
+</div>
+
+{# ---------------------------------------------------------------- agenda #}
+{% if calendar and calendar.events %}
+<div id="agenda" class="card">
+    <div class="events">
+      {% for e in calendar.events[:4] %}
+        <div class="event {{ 'today' if e.is_today }}">
+          <div class="when"><b>{{ e.day }}</b> {{ e.time }}</div>
+          <div class="what">{{ e.title }}</div>
+        </div>
+      {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{# ------------------------------------------------------------------ news #}
+<div id="news" class="card">
+  {% if has_news %}
+    {% for heading, stories in [("New York", nyc_news), ("National", national_news)] %}
+      <div class="feed">
+        <h2>{{ heading }}</h2>
+        {% for s in stories %}
+          <div class="story">
+            <div class="head">{{ s.title }}</div>
+            <div class="attr">{{ s.source }}{% if s.age %} &middot; {{ s.age }}{% endif %}</div>
+          </div>
+        {% else %}
+          <p class="empty">No headlines right now</p>
+        {% endfor %}
+      </div>
+    {% endfor %}
+  {% else %}
+    <p class="empty">Headlines unavailable</p>
+  {% endif %}
+</div>
+
+{# ---------------------------------------------------------- on this day #}
+<div id="otd">
+  {% if fact %}
+    <span class="yr">{{ fact.year }}{% if fact.era %}<em>{{ fact.era }}</em>{% endif %}</span>
+    <span class="fact{{ ' here' if fact.local }}">{{ fact.text }}</span>
+  {% else %}
+    <span class="fact">On this day, {{ otd.date_label if otd else "" }}</span>
+  {% endif %}
+</div>
+
+{# ---------------------------------------------------------------- footer #}
+<div id="foot">
+  {% if citibike %}
+    {% for s in citibike.stations[:2] %}
+      <span>
+        <b>{{ s.bikes }}</b> bikes{% if s.ebikes %} ({{ s.ebikes }}e){% endif %}
+        &middot; {{ s.name }}
+      </span>
+    {% endfor %}
+  {% endif %}
+
+  {% if air %}
+    <span class="spacer">
+      <span class="dot" style="background:{{ air.color }}"></span>
+      AQI <b>{{ air.aqi }}</b> {{ air.label }}
+    </span>
+  {% endif %}
+
+  {% if problems %}
+    <span class="{{ '' if air else 'spacer' }} offline">
+      offline: {{ problems | join(", ") }}
+    </span>
+  {% endif %}
+</div>

@@ -1,0 +1,19 @@
+# Install to ~/.config/systemd/user/dashboard.service
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now dashboard
+#   sudo loginctl enable-linger $USER    # so it survives without a login
+
+[Unit]
+Description=Wall dashboard data service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+WorkingDirectory=%h/pi-dashboard
+EnvironmentFile=%h/pi-dashboard/.env
+ExecStart=%h/pi-dashboard/.venv/bin/python run.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

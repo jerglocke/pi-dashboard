@@ -1,0 +1,15 @@
+# Install to ~/.config/systemd/user/kiosk.service
+[Unit]
+Description=Dashboard kiosk browser
+After=graphical-session.target dashboard.service
+PartOf=graphical-session.target
+
+[Service]
+# Invoked through bash on purpose: a tar extract can drop the executable
+# bit on kiosk.sh, which fails as 203/EXEC. This makes that impossible.
+ExecStart=/bin/bash %h/pi-dashboard/deploy/kiosk.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=graphical-session.target
