@@ -8,6 +8,8 @@ location and feeds are all configuration — see [Adapting it](#adapting-it-to-y
 
 <!-- Add a photo of yours on the wall. Nothing sells this like the real thing:
      ![The board](docs/board.jpg) -->
+![The Sterling St board](docs/pi-dashboard.png)
+
 
 - Live subway departures both directions, with a walk-time rule so trains you
   can't physically make are dimmed instead of taunting you
